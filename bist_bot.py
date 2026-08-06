@@ -71,7 +71,15 @@ if __name__ == "__main__":
     endeks_mesaji, tehlike = endeks_durumunu_analiz_et()
     firsat_hisseler = [sonuc for kod in hisseler if (sonuc := hisse_analiz_et(kod))]
     
+        endeks_mesaji, tehlike = endeks_durumunu_analiz_et()
+    firsat_hisseler = [sonuc for kod in hisseler if (sonuc := hisse_analiz_et(kod))]
+    
+    final_mesaj = endeks_mesaji
     if firsat_hisseler:
-        final_mesaj = endeks_mesaji + "\n🎯 TARAMA SONUÇLARI:\n" + "\n".join(firsat_hisseler)
+        final_mesaj += "\n🎯 TARAMA SONUÇLARI:\n" + "\n".join(firsat_hisseler)
         if tehlike: final_mesaj += "\n\n🚨 NOT: Endeks düşüş trendinde!"
-        telegram_mesaj_gonder(final_mesaj)
+    else:
+        final_mesaj += "\nℹ️ Şu an profesyonel kriterlere uyan fırsat hissesi bulunamadı."
+        
+    telegram_mesaj_gonder(final_mesaj)
+
