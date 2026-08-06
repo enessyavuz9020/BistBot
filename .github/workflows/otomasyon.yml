@@ -4,7 +4,7 @@ on:
   schedule:
     # Hafta içi (Pazartesi-Cuma) Türkiye saatiyle 10:00 ile 18:00 arası saat başı çalışır.
     # (GitHub sunucuları UTC kullandığı için 07:00 - 15:00 arası yazıyoruz, bu TSİ +3'e denk gelir)
-    - cron: '0 7-15 * * 1-5'
+    - cron: '17 9-16 * * 1-5'
   workflow_dispatch: # Bu satır manuel olarak test edebilmemizi sağlar
 
 jobs:
