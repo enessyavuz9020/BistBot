@@ -60,7 +60,6 @@ if __name__ == "__main__":
     tz = pytz.timezone('Europe/Istanbul')
     simdi = datetime.datetime.now(tz)
     
-    # Hafta sonu veya borsa kapalı saatleriyse çalışmadan çık (GitHub'ı yormamak için)
     saat, dakika = simdi.hour, simdi.minute
     if simdi.weekday() >= 5 or not ((saat == 10 and dakika >= 0) or (10 < saat < 18) or (saat == 18 and dakika <= 10)):
         print("Borsa kapalı. İşlem yapılmadı.")
@@ -71,9 +70,6 @@ if __name__ == "__main__":
     endeks_mesaji, tehlike = endeks_durumunu_analiz_et()
     firsat_hisseler = [sonuc for kod in hisseler if (sonuc := hisse_analiz_et(kod))]
     
-        endeks_mesaji, tehlike = endeks_durumunu_analiz_et()
-    firsat_hisseler = [sonuc for kod in hisseler if (sonuc := hisse_analiz_et(kod))]
-    
     final_mesaj = endeks_mesaji
     if firsat_hisseler:
         final_mesaj += "\n🎯 TARAMA SONUÇLARI:\n" + "\n".join(firsat_hisseler)
@@ -82,4 +78,5 @@ if __name__ == "__main__":
         final_mesaj += "\nℹ️ Şu an profesyonel kriterlere uyan fırsat hissesi bulunamadı."
         
     telegram_mesaj_gonder(final_mesaj)
+
 
