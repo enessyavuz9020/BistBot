@@ -50,6 +50,7 @@ def hisse_analiz_et(hisse_kodu):
         df.ta.bbands(length=20, std=2, append=True)
         son_gun = df.iloc[-1]
         
+        # Profesyonel Kriterler
         if (son_gun['RSI_14'] < 45) and (son_gun['Close'] <= (son_gun['BBL_20_2.0'] * 1.02)) and (son_gun['MACDh_12_26_9'] > 0):
             return f"🟢 {saf_kod} -> Fiyat: {son_gun['Close']:.2f} | RSI: {son_gun['RSI_14']:.1f}"
     except:
@@ -65,6 +66,9 @@ if __name__ == "__main__":
         print("Borsa kapalı. İşlem yapılmadı.")
         sys.exit()
 
+    # --- BİLDİRİM: BOT UYANDIĞINDA İLK BU MESAJI ATACAK ---
+    telegram_mesaj_gonder(f"⚙️ Bot Devrede! Saat {saat:02d}:{dakika:02d} taraması başlatılıyor...\n(Tüm hisselerin derin analizi yaklaşık 15-20 dakika sürebilir, sonuçlar birazdan iletilecektir.)")
+
     hisseler = ["AEFES", "AGHOL", "AHGAZ", "AKBNK", "AKCNS", "AKFGY", "AKSA", "AKSEN", "ALARK", "ALBRK", "ALFAS", "ARCLK", "ASELS", "ASTOR", "BERA", "BIENY", "BIMAS", "BRMEN", "BRSAN", "CANTE", "CCOLA", "CEMAS", "CIMSA", "CWENE", "DOAS", "DOHOL", "ECILC", "ECZYT", "EGEEN", "EKGYO", "ENERY", "ENJSA", "ENKAI", "EREGL", "EUPWR", "EUREN", "FROTO", "GARAN", "GENIL", "GESAN", "GLYHO", "GUBRF", "GWIND", "HALKB", "HEKTS", "IMASM", "IPEKE", "ISCTR", "ISDMR", "ISGYO", "ISMEN", "IZENR", "KCAER", "KCHOL", "KLSER", "KMPUR", "KONTR", "KONYA", "KOZAA", "KOZAL", "KRDMD", "KZBGY", "MAVI", "MGROS", "MIATK", "ODAS", "OTKAR", "OYAKC", "PENTA", "PETKM", "PGSUS", "PNLSN", "QUAGR", "SAHOL", "SASA", "SDTTR", "SISE", "SKBNK", "SMRTG", "SOKM", "TABGD", "TAVHL", "TCELL", "THYAO", "TKFEN", "TOASO", "TSKB", "TTKOM", "TTRAK", "TUKAS", "TUPRS", "ULKER", "VAKBN", "VESBE", "VESTL", "YEOTK", "YKBNK", "YYLGD", "ZOREN"]
     
     endeks_mesaji, tehlike = endeks_durumunu_analiz_et()
@@ -78,5 +82,4 @@ if __name__ == "__main__":
         final_mesaj += "\nℹ️ Şu an profesyonel kriterlere uyan fırsat hissesi bulunamadı."
         
     telegram_mesaj_gonder(final_mesaj)
-
-
+        
