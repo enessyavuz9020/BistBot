@@ -62,10 +62,7 @@ if __name__ == "__main__":
     simdi = datetime.datetime.now(tz)
     
     saat, dakika = simdi.hour, simdi.minute
-  #  if simdi.weekday() >= 5 or not ((saat == 10 and dakika >= 0) or (10 < saat < 18) or (saat == 18 and dakika <= 10)):
-  #      print("Borsa kapalı. İşlem yapılmadı.")
-  #      sys.exit()
-
+    
     # --- BİLDİRİM: BOT UYANDIĞINDA İLK BU MESAJI ATACAK ---
     telegram_mesaj_gonder(f"⚙️ Bot Devrede! Saat {saat:02d}:{dakika:02d} taraması başlatılıyor...\n(Tüm hisselerin derin analizi yaklaşık 15-20 dakika sürebilir, sonuçlar birazdan iletilecektir.)")
 
