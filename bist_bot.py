@@ -35,7 +35,6 @@ def telegram_son_komutu_al():
                 if "message" in m and "text" in m["message"]:
                     text = m["message"]["text"].upper()
                     if text.startswith("/TAKIP"):
-                        # /takip TUPRS:155.50 ASELS:45.00 formatını destekler
                         hisseler = text.replace("/TAKIP", "").strip().split()
                         return [h.replace(",", "").strip() for h in hisseler if h.strip()]
     except:
@@ -69,7 +68,6 @@ def grafik_ciz(df, kod):
     return buf
 
 def detayli_hisse_analizi(giris_kodu, ozel_takip_mi=False):
-    # Maliyet analizi için ayrıştırma (Örn: TUPRS:150.5)
     if ":" in giris_kodu:
         saf_kod, maliyet_str = giris_kodu.split(":")
         maliyet = float(maliyet_str)
@@ -94,21 +92,19 @@ def detayli_hisse_analizi(giris_kodu, ozel_takip_mi=False):
         
         if len(df) < 60: return sonuc_dict
         
-        # Göstergeler
         df.ta.rsi(length=14, append=True)
         df.ta.macd(fast=12, slow=26, signal=9, append=True)
         df.ta.sma(length=20, append=True)
         df.ta.sma(length=50, append=True)
         df.ta.ema(length=5, append=True)
         df.ta.ema(length=20, append=True)
-        df['Vol_SMA20'] = df['Volume'].rolling(20).mean() # Hacim Ortalaması
+        df['Vol_SMA20'] = df['Volume'].rolling(20).mean() 
         
         son_60 = df.tail(60)
         max_f = son_60['Close'].max()
         min_f = son_60['Close'].min()
         fib_618 = max_f - ((max_f - min_f) * 0.618)
         
-        # İzleyen Stop (Trailing Stop) - Son 15 günün zirvesinden %5 aşağısı
         zirve_15 = df['Close'].tail(15).max()
         izleyen_stop = zirve_15 * 0.95 
         
@@ -128,11 +124,9 @@ def detayli_hisse_analizi(giris_kodu, ozel_takip_mi=False):
         seviye_tipi = "Güçlü Destek" if fiyat > sma50 else "Güçlü Direnç"
         rsi_metni = rsi_durumu_belirle(rsi)
         
-        # 1. ÖZEL TAKİP LİSTESİ MANTIĞI
         if ozel_takip_mi:
             trend = "Yükseliş" if fiyat > sma20 else ("Düşüş" if fiyat < sma50 else "Yatay")
             
-            # Kâr/Zarar Hesaplama
             kz_metni = ""
             tavsiye = ""
             if maliyet:
@@ -141,37 +135,42 @@ def detayli_hisse_analizi(giris_kodu, ozel_takip_mi=False):
                 isaret = "+" if fark_yuzde > 0 else ""
                 kz_metni = f"\n     💰 Anlık Durum: {isaret}%{fark_yuzde:.2f} {kz_durumu} (Maliyet: {maliyet:.2f})"
                 
-                # Risk Asistanı Karar Mekanizması
-                if fark_yuzde < -5 and fiyat < sma50:
-                    tavsiye = "\n     🛑 ASİSTAN TAVSİYESİ: Zarar %5'i aştı ve ana destek kırıldı. Pozisyonu kapatmak (Stop-Loss) düşünülebilir."
-                elif fark_yuzde > 0 and fiyat < izleyen_stop:
-                    tavsiye = f"\n     🛡️ ASİSTAN TAVSİYESİ: İzleyen stop seviyesi ({izleyen_stop:.2f}) kırıldı. Kârı alıp çıkmak güvenli olabilir."
-                elif trend == "Yükseliş":
-                    tavsiye = "\n     ✅ ASİSTAN TAVSİYESİ: Trend güçlü, pozisyon korunabilir."
+                # ZARAR VE KÂR YÖNETİMİ ALGORİTMASI
+                if fark_yuzde < 0:
+                    fib_yakin = abs(fiyat - fib_618) / fib_618
+                    
+                    if (fib_yakin < 0.03 or rsi < 35 or (fiyat >= sma50 * 0.98 and fiyat <= sma50 * 1.02)):
+                        tavsiye = f"\n     📉 ASİSTAN: Zarardasınız ancak hisse güçlü destek/dip noktasına çok yakın (RSI: {rsi:.1f}). Buradan 'Maliyet Düşürme' (ekleme yapma) değerlendirilebilir."
+                    elif fiyat < sma50 and macd < macd_s:
+                        tavsiye = f"\n     🛑 ASİSTAN: Ana destek (50G) kırılmış ve düşüş ivmeli. Daha büyük kayıpları önlemek için 'Zarar Kes' (Stop-Loss) düşünülebilir."
+                    else:
+                        tavsiye = f"\n     ⏳ ASİSTAN: Hissede tehlikeli bir kırılım veya net bir dönüş yok. Panik yapmadan 'Bekle' pozisyonunda kalınması daha güvenli."
+                else:
+                    if fiyat < izleyen_stop:
+                        tavsiye = f"\n     🛡️ ASİSTAN: İzleyen stop seviyesi ({izleyen_stop:.2f}) aşağı kırıldı. Kârı korumak adına satış düşünülebilir."
+                    else:
+                        tavsiye = "\n     ✅ ASİSTAN: Trend güçlü ve kârdasınız, pozisyon korunabilir."
 
             sonuc_dict['ozel_mesaj'] = f"🔹 {saf_kod}: {fiyat:.2f} | Trend: {trend}\n     RSI: {rsi:.1f} ({rsi_metni})\n     {seviye_tipi}: {sma50:.2f}{kz_metni}{tavsiye}"
             
-        # 2. PUANLAMA VE FIRSATLAR
         puan = 0
         if rsi < 40: puan += 3
         if ema5 > ema20: puan += 3
         if macd > macd_s: puan += 2
         if abs(fiyat - fib_618) / fib_618 < 0.03: puan += 2
-        if hacim_katsayisi > 1.5: puan += 2 # Hacim artışı ekstra puan
+        if hacim_katsayisi > 1.5: puan += 2
         
         sonuc_dict['puan'] = puan
 
         if abs(fiyat - fib_618) / fib_618 < 0.02 and rsi > 40:
-            sonuc_dict['firsat'] = f"🟢 {saf_kod} (FIBONACCI TEPKİSİ) | Fiyat: {fiyat:.2f}\n     Altın Oran noktasına yakın. (Hacim Katsayısı: {hacim_katsayisi:.1f}x)"
+            sonuc_dict['firsat'] = f"🟢 {saf_kod} (FIBONACCI TEPKİSİ) | Fiyat: {fiyat:.2f}\n     Altın Oran noktasına yakın. (Hacim: {hacim_katsayisi:.1f}x)"
         elif ema5 > ema20 and onceki['EMA_5'] <= onceki['EMA_20'] and rsi < 70:
             sonuc_dict['firsat'] = f"🚀 {saf_kod} (ALTIN KESİŞİM) | Fiyat: {fiyat:.2f}\n     Ortalamalar yukarı kesti. Momentum başlıyor."
         elif rsi < 33:
             sonuc_dict['firsat'] = f"🛒 {saf_kod} (AŞIRI UCUZ) | Fiyat: {fiyat:.2f}\n     Hisse dipten dönüş sinyali arıyor. (RSI: {rsi:.1f})"
-
         if hacim_katsayisi > 2.0 and fiyat > sma20:
             sonuc_dict['firsat'] = f"💥 {saf_kod} (BÜYÜK PARA GİRİŞİ) | Fiyat: {fiyat:.2f}\n     Hacim ortalamanın {hacim_katsayisi:.1f} katına ulaştı!"
 
-        # 3. RİSK RADARI
         if rsi > 76:
             sonuc_dict['risk'] = f"🔴 {saf_kod} (ŞİŞKİN/AŞIRI ALIM) | Fiyat: {fiyat:.2f}\n     Zirvelerde geziyor, sert kâr satışı yiyebilir."
         elif fiyat < sma50 and onceki['Close'] >= onceki['SMA_50']:
@@ -190,7 +189,6 @@ if __name__ == "__main__":
         print("Borsa kapalı. İşlem yapılmadı.")
         sys.exit()
 
-    # BIST Analizi
     endeks = yf.Ticker("XU100.IS")
     df_endeks = endeks.history(period="6mo")
     df_endeks.ta.sma(length=20, append=True)
@@ -210,7 +208,7 @@ if __name__ == "__main__":
         endeks_mesaji += "🚨 PİYASA YÖNÜ AŞAĞI: Satış baskısı hakim."
         piyasa_tehlikeli = True
 
-    telegram_mesaj_gonder(f"⚙️ Bot Devrede! Saat {saat:02d}:{dakika:02d} taraması başlatılıyor...\n(Hacim, Fiyat ve Grafik Asistanı devrede.)")
+    telegram_mesaj_gonder(f"⚙️ Bot Devrede! Saat {saat:02d}:{dakika:02d} taraması başlatılıyor...\n(Portföy Asistanı ve Kriz Yönetimi Devrede.)")
 
     ozel_takip_listesi = telegram_son_komutu_al()
     saf_ozel_hisseler = [k.split(":")[0] for k in ozel_takip_listesi]
@@ -238,7 +236,7 @@ if __name__ == "__main__":
     final_mesaj = endeks_mesaji + "\n\n"
     
     if ozel_rapor:
-        final_mesaj += "👁️ ÖZEL TAKİP & PORTFÖY:\n" + "\n".join(ozel_rapor) + "\n\n"
+        final_mesaj += "👁️ ÖZEL TAKİP & PORTFÖY:\n" + "\n\n".join(ozel_rapor) + "\n\n"
         
     gorsel = None
     if firsatlar:
@@ -252,7 +250,6 @@ if __name__ == "__main__":
         else:
             final_mesaj += f"💡 Asistan Stratejisi: Endeks pozitif. {en_iyi['kod']} hacim ve göstergeler bakımından alım için oldukça cazip duruyor."
             
-        # Günün yıldızının grafiğini çiz
         if en_iyi['df'] is not None:
             gorsel = grafik_ciz(en_iyi['df'], en_iyi['kod'])
     else:
@@ -261,7 +258,6 @@ if __name__ == "__main__":
     if riskler:
         final_mesaj += "⚠️ RİSK RADARI:\n" + "\n".join(riskler)
 
-    # Önce metni ve (eğer varsa) grafiği beraber yolla
     if len(final_mesaj) > 4000:
         telegram_mesaj_gonder(final_mesaj[:4000] + "\n... (Mesaj sınırı)", gorsel_bytes=gorsel)
     else:
